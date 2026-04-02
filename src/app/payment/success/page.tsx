@@ -39,7 +39,6 @@ function SuccessContent() {
         const data = await res.json();
         if (data.success) {
           setStatus("success");
-          // 1.5초 후 시뮬레이션으로 이동
           setTimeout(() => {
             window.location.href = `/simulate?x=${x}&y=${y}&s=${s}&g=${g}&mg=${mg}&og=${og}&r=${r}`;
           }, 1500);

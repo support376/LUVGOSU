@@ -1,120 +1,116 @@
 "use client";
 
-import { useEffect, useRef, useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
+import Script from "next/script";
+
+declare global {
+  interface Window {
+    TossPayments: (clientKey: string) => {
+      requestPayment: (
+        method: string,
+        params: {
+          amount: number;
+          orderId: string;
+          orderName: string;
+          successUrl: string;
+          failUrl: string;
+        },
+      ) => Promise<void>;
+    };
+  }
+}
 
 function PaymentContent() {
   const searchParams = useSearchParams();
   const params = searchParams.toString();
+  const [sdkReady, setSdkReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sdkReady, setSdkReady] = useState(false);
-  const tossRef = useRef<Awaited<ReturnType<typeof loadTossPayments>> | null>(null);
+
+  const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || "";
 
   useEffect(() => {
-    async function init() {
-      try {
-        const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-        if (!clientKey) {
-          setError("결제 키가 설정되지 않았습니다. (NEXT_PUBLIC_TOSS_CLIENT_KEY)");
-          return;
-        }
-        setError(`키 확인: ${clientKey.substring(0, 10)}... 로딩 중`);
-        const tossPayments = await loadTossPayments(clientKey);
-        tossRef.current = tossPayments;
-        setSdkReady(true);
-        setError(null);
-      } catch (e: unknown) {
-        setError(`SDK 로딩 실패: ${JSON.stringify(e, Object.getOwnPropertyNames(e as object))}`);
-        console.error("SDK init error:", e);
-      }
+    if (typeof window !== "undefined" && "TossPayments" in window) {
+      setSdkReady(true);
     }
-    init();
   }, []);
 
   const handlePayment = async () => {
-    if (!tossRef.current) return;
+    if (!window.TossPayments) {
+      setError("결제 모듈이 로딩되지 않았습니다. 페이지를 새로고침해주세요.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const orderId = `LUVOS${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+    const orderId = `LUVOS-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     try {
-      const payment = tossRef.current.payment({ customerKey: ANONYMOUS });
-
-      await payment.requestPayment({
-        method: "CARD",
-        amount: { currency: "KRW", value: 4900 },
+      const tossPayments = window.TossPayments(clientKey);
+      await tossPayments.requestPayment("카드", {
+        amount: 4900,
         orderId,
         orderName: "LuvOS 시뮬레이션 1회",
         successUrl: `${window.location.origin}/payment/success?${params}`,
         failUrl: `${window.location.origin}/payment/fail?${params}`,
       });
     } catch (e: unknown) {
-      console.error("Payment error:", e);
-      const err = e as Record<string, unknown>;
-
-      // 유저 취소
+      const err = e as { code?: string; message?: string };
       if (err.code === "USER_CANCEL" || err.code === "PAY_PROCESS_CANCELED") {
         setLoading(false);
         return;
       }
-
-      // 상세 에러 표시
-      const details = [];
-      if (err.code) details.push(`코드: ${err.code}`);
-      if (err.message) details.push(`메시지: ${err.message}`);
-      if (details.length === 0) {
-        try {
-          details.push(JSON.stringify(e, Object.getOwnPropertyNames(e as object)));
-        } catch {
-          details.push(String(e));
-        }
-      }
-      setError(details.join(" | "));
+      setError(err.message || `결제 오류: ${JSON.stringify(e)}`);
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex-1 flex flex-col overflow-y-auto bg-background">
-      <div className="max-w-md mx-auto w-full px-4 py-6 space-y-6">
-        {/* 헤더 */}
-        <div className="flex items-center">
-          <button
-            onClick={() => window.history.back()}
-            className="text-muted hover:text-foreground"
-          >
-            &larr; 뒤로
-          </button>
-          <h2 className="flex-1 text-center font-bold">결제</h2>
-          <div className="w-10" />
-        </div>
-
-        {/* 상품 정보 */}
-        <div className="bg-card border border-card-border rounded-2xl p-5">
-          <div className="text-center">
-            <div className="text-2xl mb-2">💝</div>
-            <div className="font-bold text-lg">LuvOS 시뮬레이션</div>
-            <div className="text-sm text-muted mt-1">AI 연애 대화 시뮬레이션 1회</div>
-            <div className="text-3xl font-black text-accent mt-3">4,900원</div>
+    <>
+      <Script
+        src="https://js.tosspayments.com/v1/payment"
+        strategy="afterInteractive"
+        onLoad={() => setSdkReady(true)}
+        onError={() => setError("토스 결제 스크립트 로딩 실패")}
+      />
+      <main className="flex-1 flex flex-col overflow-y-auto bg-background">
+        <div className="max-w-md mx-auto w-full px-4 py-6 space-y-6">
+          {/* 헤더 */}
+          <div className="flex items-center">
+            <button
+              onClick={() => window.history.back()}
+              className="text-muted hover:text-foreground"
+            >
+              &larr; 뒤로
+            </button>
+            <h2 className="flex-1 text-center font-bold">결제</h2>
+            <div className="w-10" />
           </div>
-          <div className="mt-4 pt-4 border-t border-card-border text-xs text-muted space-y-1">
-            <div>• 선택한 상황에서 AI와 10턴 대화</div>
-            <div>• 심리학 이론 기반 4축 채점 리포트</div>
-            <div>• 개선 포인트 및 대안 제시</div>
-          </div>
-        </div>
 
-        {error && (
-          <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 text-sm text-red-400 text-center break-all">
-            {error}
+          {/* 상품 정보 */}
+          <div className="bg-card border border-card-border rounded-2xl p-5">
+            <div className="text-center">
+              <div className="text-2xl mb-2">💝</div>
+              <div className="font-bold text-lg">LuvOS 시뮬레이션</div>
+              <div className="text-sm text-muted mt-1">AI 연애 대화 시뮬레이션 1회</div>
+              <div className="text-3xl font-black text-accent mt-3">4,900원</div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-card-border text-xs text-muted space-y-1">
+              <div>• 선택한 상황에서 AI와 10턴 대화</div>
+              <div>• 심리학 이론 기반 4축 채점 리포트</div>
+              <div>• 개선 포인트 및 대안 제시</div>
+            </div>
           </div>
-        )}
 
-        {/* 결제 버튼 */}
-        <div className="space-y-3">
+          {error && (
+            <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 text-sm text-red-400 text-center break-all">
+              {error}
+            </div>
+          )}
+
+          {/* 결제 버튼 */}
           <button
             onClick={handlePayment}
             disabled={!sdkReady || loading}
@@ -123,8 +119,8 @@ function PaymentContent() {
             {loading ? "결제 진행 중..." : sdkReady ? "4,900원 카드 결제" : "결제 모듈 로딩 중..."}
           </button>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
 
