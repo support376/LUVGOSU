@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>토스 결제 테스트</title>
+  <script src="https://js.tosspayments.com/v1/payment-widget"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+    #log { background: #fff; border: 1px solid #ddd; padding: 10px; margin: 10px 0; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 100px; }
+    button { width: 100%; padding: 15px; font-size: 16px; background: #3182f6; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+    button:disabled { opacity: 0.5; }
+    #payment-method { min-height: 200px; background: #fff; }
+    #agreement { background: #fff; }
+  </style>
+</head>
+<body>
+  <h2>토스 결제 위젯 테스트</h2>
+  <div id="log">로그...</div>
+  <div id="payment-method"></div>
+  <div id="agreement"></div>
+  <button id="pay-btn" disabled>결제하기 (4,900원)</button>
+
+  <script>
+    var log = document.getElementById('log');
+    function addLog(msg) {
+      log.textContent += '\n' + new Date().toLocaleTimeString() + ' ' + msg;
+    }
+
+    // 키 (env에서 가져올 수 없으니 직접 입력)
+    var CLIENT_KEY = 'test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm';
+
+    addLog('1. 스크립트 로드 완료');
+    addLog('2. PaymentWidget 존재: ' + (typeof PaymentWidget !== 'undefined'));
+    addLog('3. 클라이언트 키: ' + CLIENT_KEY.substring(0, 15) + '...');
+
+    try {
+      addLog('4. PaymentWidget 초기화 중...');
+      var widget = PaymentWidget(CLIENT_KEY, PaymentWidget.ANONYMOUS);
+      addLog('5. 초기화 성공. renderPaymentMethods 호출...');
+
+      widget.renderPaymentMethods('#payment-method', { value: 4900 })
+        .then(function() {
+          addLog('6. renderPaymentMethods 완료!');
+          return widget.renderAgreement('#agreement');
+        })
+        .then(function() {
+          addLog('7. renderAgreement 완료! 결제 준비됨.');
+          document.getElementById('pay-btn').disabled = false;
+        })
+        .catch(function(err) {
+          addLog('ERROR (render): ' + (err.message || JSON.stringify(err)));
+        });
+    } catch(e) {
+      addLog('ERROR (init): ' + (e.message || JSON.stringify(e)));
+    }
+
+    document.getElementById('pay-btn').addEventListener('click', function() {
+      var orderId = 'TEST-' + Date.now();
+      widget.requestPayment({
+        orderId: orderId,
+        orderName: 'LuvOS 테스트',
+        successUrl: window.location.origin + '/payment/success',
+        failUrl: window.location.origin + '/payment/fail',
+      }).catch(function(err) {
+        addLog('ERROR (pay): ' + (err.message || JSON.stringify(err)));
+      });
+    });
+  </script>
+</body>
+</html>
