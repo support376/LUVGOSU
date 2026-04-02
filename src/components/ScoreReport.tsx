@@ -1,12 +1,13 @@
 "use client";
 
-import type { ScoreResult, Coordinate, Situation } from "@/lib/types";
-import { getDifficultyStars, getGradeColor } from "@/lib/data";
+import type { ScoreResult, Coordinate, Situation, GoalId } from "@/lib/types";
+import { getDifficultyStars, getGradeColor, GOALS } from "@/lib/data";
 
 interface Props {
   score: ScoreResult;
   coordinate: Coordinate;
   situation: Situation;
+  goal: GoalId;
   onRetry: () => void;
   onHome: () => void;
 }
@@ -29,7 +30,15 @@ function ScoreBar({ label, score, maxScore = 100 }: { label: string; score: numb
   );
 }
 
-export default function ScoreReport({ score, coordinate, situation, onRetry, onHome }: Props) {
+export default function ScoreReport({ score, coordinate, situation, goal, onRetry, onHome }: Props) {
+  const goalData = GOALS.find((g) => g.id === goal) || GOALS[0];
+  const axes = [
+    { label: goalData.axisLabels[0], axis: score.axis1 },
+    { label: goalData.axisLabels[1], axis: score.axis2 },
+    { label: goalData.axisLabels[2], axis: score.axis3 },
+    { label: goalData.axisLabels[3], axis: score.axis4 },
+  ];
+
   return (
     <div className="max-w-lg mx-auto p-4 space-y-6">
       {/* 헤더 */}
@@ -38,6 +47,10 @@ export default function ScoreReport({ score, coordinate, situation, onRetry, onH
         <div className="text-sm text-muted">
           상대: ({coordinate.x},{coordinate.y}) · {situation.title} ·{" "}
           난이도 {getDifficultyStars(coordinate.x, coordinate.y)}
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent/10 border border-accent/30 rounded-full text-sm">
+          <span>{goalData.emoji}</span>
+          <span className="text-accent-light">{goalData.name}</span>
         </div>
       </div>
 
@@ -55,22 +68,15 @@ export default function ScoreReport({ score, coordinate, situation, onRetry, onH
       {/* 4축 점수 */}
       <div className="bg-card border border-card-border rounded-2xl p-5 space-y-4">
         <h3 className="font-medium text-sm text-muted">4축 분석</h3>
-        <ScoreBar label="독소 회피" score={score.toxinAvoidance.score} />
-        <ScoreBar label="감정 비율" score={score.positiveRatio.score} />
-        <ScoreBar label="수리 시도" score={score.repairAttempts.score} />
-        <ScoreBar label="영향 수용" score={score.acceptingInfluence.score} />
+        {axes.map(({ label, axis }) => (
+          <ScoreBar key={label} label={label} score={axis.score} />
+        ))}
       </div>
 
       {/* 피드백 */}
       <div className="bg-card border border-card-border rounded-2xl p-5 space-y-4">
         <h3 className="font-medium text-sm text-muted">상세 피드백</h3>
-
-        {[
-          { label: "독소 회피", axis: score.toxinAvoidance },
-          { label: "감정 비율", axis: score.positiveRatio },
-          { label: "수리 시도", axis: score.repairAttempts },
-          { label: "영향 수용", axis: score.acceptingInfluence },
-        ].map(({ label, axis }) => (
+        {axes.map(({ label, axis }) => (
           <div key={label} className="text-sm">
             <div className="font-medium text-accent-light mb-1">{label}</div>
             <p className="text-muted">{axis.feedback}</p>

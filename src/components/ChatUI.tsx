@@ -1,23 +1,27 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { Coordinate, ChatMessage, Situation } from "@/lib/types";
+import type { Coordinate, ChatMessage, Situation, GoalId } from "@/lib/types";
+import { GOALS } from "@/lib/data";
 
 interface Props {
   coordinate: Coordinate;
   situation: Situation;
+  goal: GoalId;
   onComplete: (messages: ChatMessage[]) => void;
 }
 
 const MAX_TURNS = 10; // 상대 5회 + 유저 5회
 
-export default function ChatUI({ coordinate, situation, onComplete }: Props) {
+export default function ChatUI({ coordinate, situation, goal, onComplete }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
   const [started, setStarted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const goalData = GOALS.find((g) => g.id === goal) || GOALS[0];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,6 +74,7 @@ export default function ChatUI({ coordinate, situation, onComplete }: Props) {
         body: JSON.stringify({
           coordinate,
           situationId: situation.id,
+          goal,
           messages: newMessages,
         }),
       });
@@ -107,7 +112,13 @@ export default function ChatUI({ coordinate, situation, onComplete }: Props) {
     <div className="flex flex-col h-full">
       {/* 상황 브리핑 헤더 */}
       <div className="bg-card border-b border-card-border p-4">
-        <div className="text-sm text-muted mb-1">{situation.category}</div>
+        <div className="flex items-center gap-2 text-sm text-muted mb-1">
+          <span>{situation.category}</span>
+          <span className="text-card-border">·</span>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 rounded text-xs text-accent-light">
+            {goalData.emoji} {goalData.name}
+          </span>
+        </div>
         <div className="font-medium">{situation.title}</div>
         <div className="text-xs text-muted mt-1">{situation.emotionalContext}</div>
         {/* 턴 프로그레스 */}
@@ -132,6 +143,12 @@ export default function ChatUI({ coordinate, situation, onComplete }: Props) {
             <div className="text-lg font-medium mb-3">상황 브리핑</div>
             <p className="text-sm text-muted mb-2">{situation.setup}</p>
             <p className="text-xs text-accent-light">{situation.emotionalContext}</p>
+            <div className="mt-4 pt-3 border-t border-card-border">
+              <div className="text-xs text-muted mb-1">목표</div>
+              <div className="text-sm font-medium">
+                {goalData.emoji} {goalData.name}: {goalData.description}
+              </div>
+            </div>
           </div>
           <button
             onClick={startSimulation}

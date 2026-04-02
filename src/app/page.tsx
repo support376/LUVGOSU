@@ -3,14 +3,16 @@
 import { useState } from "react";
 import CoordinateGrid from "@/components/CoordinateGrid";
 import SituationPicker from "@/components/SituationPicker";
-import type { Coordinate } from "@/lib/types";
-import { getDifficultyStars } from "@/lib/data";
+import GoalPicker from "@/components/GoalPicker";
+import type { Coordinate, GoalId } from "@/lib/types";
+import { getDifficultyStars, GOALS } from "@/lib/data";
 
-type Step = "landing" | "coordinate" | "situation";
+type Step = "landing" | "coordinate" | "goal" | "situation";
 
 export default function Home() {
   const [step, setStep] = useState<Step>("landing");
   const [coordinate, setCoordinate] = useState<Coordinate>({ x: 3, y: 3 });
+  const [goal, setGoal] = useState<GoalId | null>(null);
   const [situationId, setSituationId] = useState<string | null>(null);
 
   // 랜딩 페이지
@@ -39,15 +41,22 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">2</span>
                 <div>
-                  <div className="text-foreground font-medium">갈등 시뮬레이션</div>
-                  <div>AI 상대와 10턴 대화</div>
+                  <div className="text-foreground font-medium">관계 목표 선택</div>
+                  <div>화해 / 주도권 / 진심 끌어내기 / 쿨한 정리</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">3</span>
                 <div>
-                  <div className="text-foreground font-medium">연구 기반 채점</div>
-                  <div>Gottman Method 4축 분석 리포트</div>
+                  <div className="text-foreground font-medium">갈등 시뮬레이션</div>
+                  <div>AI 상대와 10턴 대화</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">4</span>
+                <div>
+                  <div className="text-foreground font-medium">목표 기반 채점</div>
+                  <div>목표별 심리학 이론 4축 분석 리포트</div>
                 </div>
               </div>
             </div>
@@ -60,7 +69,7 @@ export default function Home() {
           >
             시작하기
           </button>
-          <p className="text-xs text-muted">무료 1회 체험</p>
+          <p className="text-xs text-muted">무료 체험</p>
         </div>
       </main>
     );
@@ -83,8 +92,41 @@ export default function Home() {
         </div>
 
         <button
-          onClick={() => setStep("situation")}
+          onClick={() => setStep("goal")}
           className="mt-4 w-full py-3 bg-accent text-white rounded-full font-medium hover:bg-accent-light transition-colors"
+        >
+          다음: 목표 선택
+        </button>
+      </main>
+    );
+  }
+
+  // 목표 선택 단계
+  if (step === "goal") {
+    const selectedGoal = goal ? GOALS.find((g) => g.id === goal) : null;
+    return (
+      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6">
+        <div className="flex items-center mb-6">
+          <button onClick={() => setStep("coordinate")} className="text-muted hover:text-foreground">
+            &larr; 뒤로
+          </button>
+          <h2 className="flex-1 text-center font-bold">관계 목표 선택</h2>
+          <div className="w-10" />
+        </div>
+
+        <div className="mb-3 text-sm text-center text-muted">
+          상대: ({coordinate.x},{coordinate.y}) · 난이도{" "}
+          {getDifficultyStars(coordinate.x, coordinate.y)}
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <GoalPicker value={goal} onChange={setGoal} />
+        </div>
+
+        <button
+          onClick={() => setStep("situation")}
+          disabled={!goal}
+          className="mt-4 w-full py-3 bg-accent text-white rounded-full font-medium disabled:opacity-50 hover:bg-accent-light transition-colors"
         >
           다음: 상황 선택
         </button>
@@ -93,10 +135,11 @@ export default function Home() {
   }
 
   // 상황 선택 단계
+  const selectedGoal = goal ? GOALS.find((g) => g.id === goal) : null;
   return (
     <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6">
       <div className="flex items-center mb-6">
-        <button onClick={() => setStep("coordinate")} className="text-muted hover:text-foreground">
+        <button onClick={() => setStep("goal")} className="text-muted hover:text-foreground">
           &larr; 뒤로
         </button>
         <h2 className="flex-1 text-center font-bold">상황 선택</h2>
@@ -106,6 +149,9 @@ export default function Home() {
       <div className="mb-3 text-sm text-center text-muted">
         상대: ({coordinate.x},{coordinate.y}) · 난이도{" "}
         {getDifficultyStars(coordinate.x, coordinate.y)}
+        {selectedGoal && (
+          <span> · {selectedGoal.emoji} {selectedGoal.name}</span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -114,8 +160,8 @@ export default function Home() {
 
       <button
         onClick={() => {
-          if (situationId) {
-            window.location.href = `/simulate?x=${coordinate.x}&y=${coordinate.y}&s=${situationId}`;
+          if (situationId && goal) {
+            window.location.href = `/simulate?x=${coordinate.x}&y=${coordinate.y}&s=${situationId}&g=${goal}`;
           }
         }}
         disabled={!situationId}

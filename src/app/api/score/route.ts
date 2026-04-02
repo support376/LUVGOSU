@@ -1,6 +1,6 @@
 import { buildScoringPrompt } from "@/lib/prompts";
 import { SITUATIONS } from "@/lib/data";
-import type { Coordinate, ChatMessage, ScoreResult } from "@/lib/types";
+import type { Coordinate, ChatMessage, ScoreResult, GoalId } from "@/lib/types";
 import { getGrade } from "@/lib/data";
 
 export async function POST(request: Request) {
@@ -8,10 +8,12 @@ export async function POST(request: Request) {
   const {
     coordinate,
     situationId,
+    goal,
     messages,
   }: {
     coordinate: Coordinate;
     situationId: string;
+    goal: GoalId;
     messages: ChatMessage[];
   } = body;
 
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "잘못된 상황 ID" }, { status: 400 });
   }
 
-  const scoringPrompt = buildScoringPrompt(messages, coordinate, situation);
+  const scoringPrompt = buildScoringPrompt(messages, coordinate, situation, goal);
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -69,10 +71,10 @@ export async function POST(request: Request) {
 
   // totalScore 재계산
   const total =
-    parsed.toxinAvoidance.score +
-    parsed.positiveRatio.score +
-    parsed.repairAttempts.score +
-    parsed.acceptingInfluence.score;
+    parsed.axis1.score +
+    parsed.axis2.score +
+    parsed.axis3.score +
+    parsed.axis4.score;
   parsed.totalScore = total;
   parsed.grade = getGrade(total);
 

@@ -4,17 +4,19 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ChatUI from "@/components/ChatUI";
 import ScoreReport from "@/components/ScoreReport";
-import { SITUATIONS } from "@/lib/data";
-import type { Coordinate, ChatMessage, ScoreResult } from "@/lib/types";
+import { SITUATIONS, GOALS } from "@/lib/data";
+import type { Coordinate, ChatMessage, ScoreResult, GoalId } from "@/lib/types";
 
 function SimulateContent() {
   const searchParams = useSearchParams();
   const x = parseInt(searchParams.get("x") || "3");
   const y = parseInt(searchParams.get("y") || "3");
   const situationId = searchParams.get("s") || "S1";
+  const goalId = (searchParams.get("g") || "reconciliation") as GoalId;
 
   const coordinate: Coordinate = { x, y };
   const situation = SITUATIONS.find((s) => s.id === situationId) || SITUATIONS[0];
+  const goalData = GOALS.find((g) => g.id === goalId) || GOALS[0];
 
   const [phase, setPhase] = useState<"chat" | "scoring" | "report">("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -31,6 +33,7 @@ function SimulateContent() {
         body: JSON.stringify({
           coordinate,
           situationId,
+          goal: goalId,
           messages: completedMessages,
         }),
       });
@@ -53,9 +56,11 @@ function SimulateContent() {
     return (
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="text-4xl animate-pulse">&#x1f9e0;</div>
-          <div className="text-lg font-medium">Gottman Method 기반 분석 중...</div>
-          <div className="text-sm text-muted">4축 채점을 진행하고 있습니다</div>
+          <div className="text-4xl animate-pulse">{goalData.emoji}</div>
+          <div className="text-lg font-medium">{goalData.name} 목표 기반 분석 중...</div>
+          <div className="text-sm text-muted">
+            {goalData.axisLabels.join(" · ")}
+          </div>
           <div className="flex justify-center gap-1">
             {[0, 1, 2].map((i) => (
               <div
@@ -77,6 +82,7 @@ function SimulateContent() {
           score={score}
           coordinate={coordinate}
           situation={situation}
+          goal={goalId}
           onRetry={() => {
             setPhase("chat");
             setMessages([]);
@@ -93,6 +99,7 @@ function SimulateContent() {
       <ChatUI
         coordinate={coordinate}
         situation={situation}
+        goal={goalId}
         onComplete={handleComplete}
       />
     </main>

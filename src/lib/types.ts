@@ -25,6 +25,18 @@ export interface Situation {
   opponentFirstMessage: string;
 }
 
+// ===== 관계 목표 =====
+export type GoalId = "reconciliation" | "dominance" | "empathy" | "closure";
+
+export interface Goal {
+  id: GoalId;
+  name: string;
+  description: string;
+  emoji: string;
+  axisLabels: [string, string, string, string];
+  warning?: string;
+}
+
 // ===== 채팅 =====
 export interface ChatMessage {
   role: "user" | "opponent" | "system";
@@ -40,10 +52,10 @@ export interface AxisScore {
 }
 
 export interface ScoreResult {
-  toxinAvoidance: AxisScore;
-  positiveRatio: AxisScore;
-  repairAttempts: AxisScore;
-  acceptingInfluence: AxisScore;
+  axis1: AxisScore;
+  axis2: AxisScore;
+  axis3: AxisScore;
+  axis4: AxisScore;
   totalScore: number;
   grade: "D" | "C" | "B" | "A" | "S";
   bestMoment: { turn: number; description: string };
@@ -56,6 +68,7 @@ export interface SimulationSession {
   id: string;
   coordinate: Coordinate;
   situation: Situation;
+  goal: GoalId;
   messages: ChatMessage[];
   score?: ScoreResult;
   createdAt: string;
@@ -64,10 +77,10 @@ export interface SimulationSession {
 // ===== 스탯 카드 =====
 export interface StatCard {
   totalSessions: number;
-  avgToxin: number;
-  avgRatio: number;
-  avgRepair: number;
-  avgInfluence: number;
+  avgAxis1: number;
+  avgAxis2: number;
+  avgAxis3: number;
+  avgAxis4: number;
   totalScore: number;
   grade: string;
   typeName: string;

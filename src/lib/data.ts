@@ -1,4 +1,37 @@
-import type { TypePreset, Situation } from "./types";
+import type { TypePreset, Situation, Goal } from "./types";
+
+// ===== 4개 관계 목표 =====
+export const GOALS: Goal[] = [
+  {
+    id: "reconciliation",
+    name: "화해",
+    description: "갈등을 풀고 관계를 회복하는 것이 목표",
+    emoji: "🤝",
+    axisLabels: ["독소 회피", "감정 반응성", "수용적 대응", "책임 인정"],
+  },
+  {
+    id: "dominance",
+    name: "주도권 확보",
+    description: "심리적 우위를 가져와 상대가 더 매달리게 만드는 것이 목표",
+    emoji: "👑",
+    axisLabels: ["희소성 시그널링", "프레임 컨트롤", "투자 비대칭", "감정 밀당 조율"],
+    warning: "이 목표는 조작적 성격이 있습니다. 교육적 목적으로만 활용하세요.",
+  },
+  {
+    id: "empathy",
+    name: "진심 끌어내기",
+    description: "상대의 방어벽을 허물고 본심을 말하게 하는 것이 목표",
+    emoji: "💎",
+    axisLabels: ["타당화 깊이", "상호 자기개방", "반영적 경청", "안전 공간 구축"],
+  },
+  {
+    id: "closure",
+    name: "쿨한 정리",
+    description: "감정 소모 없이 깔끔하게 선 긋는 것이 목표",
+    emoji: "✂️",
+    axisLabels: ["입장 명확성", "NVC 준수", "감정 억제력", "존엄 보존"],
+  },
+];
 
 // ===== 6개 대표 유형 프리셋 =====
 export const TYPE_PRESETS: TypePreset[] = [
