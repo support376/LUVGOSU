@@ -199,9 +199,27 @@ export default function Home() {
       </div>
 
       <button
-        onClick={() => {
-          if (situationId && goal && myGender && opponentGender && role) {
-            window.location.href = `/simulate?x=${coordinate.x}&y=${coordinate.y}&s=${situationId}&g=${goal}&mg=${myGender}&og=${opponentGender}&r=${role}`;
+        onClick={async () => {
+          if (!situationId || !goal || !myGender || !opponentGender || !role) return;
+          const simParams = `x=${coordinate.x}&y=${coordinate.y}&s=${situationId}&g=${goal}&mg=${myGender}&og=${opponentGender}&r=${role}`;
+
+          // 무료 1회 체크
+          const res = await fetch("/api/check-free");
+          const { isFree } = await res.json();
+
+          if (isFree) {
+            // 무료 사용 기록
+            await fetch("/api/check-free", { method: "POST" });
+            window.location.href = `/simulate?${simParams}`;
+          } else {
+            // 이미 결제한 세션이 있는지 확인
+            const paidRes = await fetch("/api/check-paid");
+            const { isPaid } = await paidRes.json();
+            if (isPaid) {
+              window.location.href = `/simulate?${simParams}`;
+            } else {
+              window.location.href = `/payment?${simParams}`;
+            }
           }
         }}
         disabled={!situationId}
