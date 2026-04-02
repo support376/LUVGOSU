@@ -178,7 +178,7 @@ export default function Home() {
   // 상황 선택
   const selectedGoal = goal ? GOALS.find((g) => g.id === goal) : null;
   return (
-    <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6">
+    <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6 overflow-y-auto">
       <div className="flex items-center mb-6">
         <button onClick={() => setStep("goal")} className="text-muted hover:text-foreground">
           &larr; 뒤로
