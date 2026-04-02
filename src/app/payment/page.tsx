@@ -112,8 +112,13 @@ function PaymentContent() {
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 text-sm text-red-400 text-center break-all">
-            {error}
+          <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 text-sm text-red-400 break-all">
+            <textarea
+              readOnly
+              value={error}
+              className="w-full bg-transparent text-red-400 text-sm resize-none border-none focus:outline-none"
+              rows={5}
+            />
           </div>
         )}
 
