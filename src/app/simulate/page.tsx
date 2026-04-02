@@ -29,6 +29,9 @@ function SimulateContent() {
     setMessages(completedMessages);
     setPhase("scoring");
 
+    // 결제 세션 쿠키 소비
+    fetch("/api/check-paid", { method: "POST" }).catch(() => {});
+
     try {
       const res = await fetch("/api/score", {
         method: "POST",

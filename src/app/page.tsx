@@ -18,6 +18,7 @@ export default function Home() {
   const [coordinate, setCoordinate] = useState<Coordinate>({ x: 3, y: 3 });
   const [goal, setGoal] = useState<GoalId | null>(null);
   const [situationId, setSituationId] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
 
   const genderLabel = (g: Gender | null) => g === "male" ? "남자" : g === "female" ? "여자" : "";
   const roleLabel = role === "upset" ? "😤 문제 제기" : role === "accused" ? "😰 지적당하는 쪽" : "";
@@ -199,19 +200,21 @@ export default function Home() {
 
         <button
         onClick={async () => {
-          if (!situationId || !goal || !myGender || !opponentGender || !role) return;
+          if (!situationId || !goal || !myGender || !opponentGender || !role || starting) return;
+          setStarting(true);
           const simParams = `x=${coordinate.x}&y=${coordinate.y}&s=${situationId}&g=${goal}&mg=${myGender}&og=${opponentGender}&r=${role}`;
 
-          // 무료 1회 체크
-          const res = await fetch("/api/check-free");
-          const { isFree } = await res.json();
+          try {
+            // 무료 1회 원자적 체크+소비
+            const res = await fetch("/api/check-free", { method: "POST" });
+            const { claimed } = await res.json();
 
-          if (isFree) {
-            // 무료 사용 기록
-            await fetch("/api/check-free", { method: "POST" });
-            window.location.href = `/simulate?${simParams}`;
-          } else {
-            // 이미 결제한 세션이 있는지 확인
+            if (claimed) {
+              window.location.href = `/simulate?${simParams}`;
+              return;
+            }
+
+            // 이미 결제한 세션 확인
             const paidRes = await fetch("/api/check-paid");
             const { isPaid } = await paidRes.json();
             if (isPaid) {
@@ -219,12 +222,14 @@ export default function Home() {
             } else {
               window.location.href = `/payment?${simParams}`;
             }
+          } catch {
+            setStarting(false);
           }
         }}
-        disabled={!situationId}
+        disabled={!situationId || starting}
         className="mt-4 w-full py-3 bg-accent text-white rounded-full font-medium disabled:opacity-50 hover:bg-accent-light transition-colors"
       >
-        시뮬레이션 시작
+        {starting ? "준비 중..." : "시뮬레이션 시작"}
         </button>
       </div>
     </main>

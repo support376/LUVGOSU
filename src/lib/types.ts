@@ -51,6 +51,7 @@ export interface ChatMessage {
   role: "user" | "opponent" | "system";
   content: string;
   turn: number;
+  time?: string; // 표시용 시간 (오전/오후 H:MM)
 }
 
 // ===== 채점 =====

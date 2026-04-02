@@ -1,5 +1,8 @@
 import type { TypePreset, Situation, Goal } from "./types";
 
+// ===== 가격 =====
+export const PRICE = 4900;
+
 // ===== 4개 관계 목표 =====
 export const GOALS: Goal[] = [
   {

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   }
 
   // 금액 검증
-  if (amount !== 4900) {
+  if (amount !== 4_900) {
     return Response.json({ error: "잘못된 금액" }, { status: 400 });
   }
 

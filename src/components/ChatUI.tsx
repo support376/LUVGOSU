@@ -65,6 +65,7 @@ export default function ChatUI({ coordinate, situation, goal, myGender, opponent
       role: "opponent",
       content: firstMessage,
       turn: 1,
+      time: getTimeString(),
     };
     setMessages([firstMsg]);
     setTurnCount(1);
@@ -78,6 +79,7 @@ export default function ChatUI({ coordinate, situation, goal, myGender, opponent
       role: "user",
       content: input.trim(),
       turn: userTurn,
+      time: getTimeString(),
     };
 
     const newMessages = [...messages, userMsg];
@@ -85,11 +87,13 @@ export default function ChatUI({ coordinate, situation, goal, myGender, opponent
     setInput("");
     setTurnCount(userTurn);
 
+    // 유저 5번째 응답(turn 10)이면 → 대화 완료
     if (userTurn >= MAX_TURNS) {
       onComplete(newMessages);
       return;
     }
 
+    // AI 응답 요청
     setLoading(true);
     try {
       const res = await fetch("/api/simulate", {
@@ -113,18 +117,21 @@ export default function ChatUI({ coordinate, situation, goal, myGender, opponent
           role: "opponent",
           content: data.reply,
           turn: opponentTurn,
+          time: getTimeString(),
         };
-        setMessages((prev) => [...prev, opponentMsg]);
+        const allMessages = [...newMessages, opponentMsg];
+        setMessages(allMessages);
         setTurnCount(opponentTurn);
 
+        // 상대 응답 후 10턴 도달 시 완료
         if (opponentTurn >= MAX_TURNS) {
-          onComplete([...newMessages, opponentMsg]);
+          onComplete(allMessages);
         }
       }
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "system", content: "오류가 발생했습니다. 다시 시도해주세요.", turn: userTurn },
+        { role: "system", content: "오류가 발생했습니다. 다시 시도해주세요.", turn: userTurn, time: getTimeString() },
       ]);
     } finally {
       setLoading(false);
@@ -260,7 +267,7 @@ export default function ChatUI({ coordinate, situation, goal, myGender, opponent
                         <div className="relative bg-white text-kakao-text rounded-2xl rounded-tl-sm px-3 py-2 text-[13px] leading-relaxed shadow-sm max-w-[240px] bubble-left">
                           {msg.content}
                         </div>
-                        <span className="text-[10px] text-kakao-time shrink-0 mb-0.5">{getTimeString()}</span>
+                        <span className="text-[10px] text-kakao-time shrink-0 mb-0.5">{msg.time}</span>
                       </div>
                     </div>
                   </div>
@@ -269,7 +276,7 @@ export default function ChatUI({ coordinate, situation, goal, myGender, opponent
 
               return (
                 <div key={i} className="flex justify-end items-end gap-1.5">
-                  <span className="text-[10px] text-kakao-time shrink-0 mb-0.5">{getTimeString()}</span>
+                  <span className="text-[10px] text-kakao-time shrink-0 mb-0.5">{msg.time}</span>
                   <div className="relative bg-kakao-yellow text-kakao-text rounded-2xl rounded-tr-sm px-3 py-2 text-[13px] leading-relaxed shadow-sm max-w-[240px] bubble-right">
                     {msg.content}
                   </div>

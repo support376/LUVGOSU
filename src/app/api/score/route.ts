@@ -72,13 +72,28 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = JSON.parse(jsonMatch[0]) as ScoreResult;
+  let parsed: ScoreResult;
+  try {
+    parsed = JSON.parse(jsonMatch[0]) as ScoreResult;
+  } catch {
+    return Response.json(
+      { error: "채점 결과 JSON 파싱 실패" },
+      { status: 500 },
+    );
+  }
 
-  const total =
-    parsed.axis1.score +
-    parsed.axis2.score +
-    parsed.axis3.score +
-    parsed.axis4.score;
+  // 점수 유효성 검증
+  const axes = [parsed.axis1, parsed.axis2, parsed.axis3, parsed.axis4];
+  for (const axis of axes) {
+    if (!axis || typeof axis.score !== "number") {
+      return Response.json(
+        { error: "채점 결과 형식 오류" },
+        { status: 500 },
+      );
+    }
+  }
+
+  const total = axes.reduce((sum, a) => sum + a.score, 0);
   parsed.totalScore = total;
   parsed.grade = getGrade(total);
 

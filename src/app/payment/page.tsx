@@ -41,7 +41,7 @@ function PaymentContent() {
 
     try {
       const widget = window.PaymentWidget(clientKey, window.PaymentWidget.ANONYMOUS);
-      widget.renderPaymentMethods("#payment-method", { value: 4900 });
+      widget.renderPaymentMethods("#payment-method", { value: 4_900 });
       widget.renderAgreement("#agreement");
       widgetRef.current = widget;
 
