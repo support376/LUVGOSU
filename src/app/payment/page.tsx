@@ -8,8 +8,8 @@ declare global {
   interface Window {
     PaymentWidget: {
       (clientKey: string, customerKey: string): {
-        renderPaymentMethods: (selector: string, amount: { value: number }) => void;
-        renderAgreement: (selector: string) => void;
+        renderPaymentMethods: (selector: string, amount: { value: number }) => Promise<void>;
+        renderAgreement: (selector: string) => Promise<void>;
         requestPayment: (params: {
           orderId: string;
           orderName: string;
@@ -41,10 +41,12 @@ function PaymentContent() {
 
     rendered.current = true;
 
+    async function renderWidgets() {
     try {
       const widget = window.PaymentWidget(clientKey, window.PaymentWidget.ANONYMOUS);
-      widget.renderPaymentMethods("#payment-method", { value: 4900 });
-      widget.renderAgreement("#agreement");
+      // renderPaymentMethods는 Promise를 반환 — 완료 대기 필수
+      await widget.renderPaymentMethods("#payment-method", { value: 4900 });
+      await widget.renderAgreement("#agreement");
       widgetRef.current = widget;
       setReady(true);
     } catch (e: unknown) {
@@ -56,6 +58,8 @@ function PaymentContent() {
       }
       setError(`위젯 렌더링 실패: ${msg}`);
     }
+    }
+    renderWidgets();
   }, [scriptLoaded, clientKey]);
 
   const handlePayment = async () => {
