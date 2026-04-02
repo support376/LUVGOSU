@@ -220,7 +220,7 @@ export default function Home() {
             if (isPaid) {
               window.location.href = `/simulate?${simParams}`;
             } else {
-              window.location.href = `/payment?${simParams}`;
+              window.location.href = `/pay.html?${simParams}`;
             }
           } catch {
             setStarting(false);

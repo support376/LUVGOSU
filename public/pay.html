@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuvOS 결제</title>
+  <script src="https://js.tosspayments.com/v1/payment-widget"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 20px; }
+    .card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card-center { text-align: center; }
+    .emoji { font-size: 28px; margin-bottom: 8px; }
+    .title { font-size: 18px; font-weight: 700; }
+    .sub { font-size: 13px; color: #888; margin-top: 4px; }
+    .price { font-size: 32px; font-weight: 900; color: #e84393; margin-top: 12px; }
+    .features { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; font-size: 12px; color: #888; }
+    .features div { margin-bottom: 4px; }
+    #payment-method { min-height: 200px; background: #fff; border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
+    #agreement { background: #fff; border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
+    .pay-btn { width: 100%; padding: 16px; font-size: 17px; font-weight: 700; color: #fff; background: #ccc; border: none; border-radius: 50px; cursor: pointer; transition: background 0.2s; }
+    .pay-btn.active { background: #e84393; box-shadow: 0 4px 16px rgba(232,67,147,0.3); }
+    .pay-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .back { display: inline-block; color: #888; text-decoration: none; font-size: 14px; margin-bottom: 16px; }
+    .error { background: #fff0f0; border: 1px solid #ffccc7; border-radius: 12px; padding: 12px; font-size: 13px; color: #e84393; margin-bottom: 16px; word-break: break-all; }
+    .loading { text-align: center; color: #888; font-size: 13px; padding: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="javascript:history.back();">&larr; 뒤로</a>
+
+    <div class="card card-center">
+      <div class="emoji">💝</div>
+      <div class="title">LuvOS 시뮬레이션</div>
+      <div class="sub">AI 연애 대화 시뮬레이션 1회</div>
+      <div class="price">4,900원</div>
+      <div class="features">
+        <div>• 선택한 상황에서 AI와 10턴 대화</div>
+        <div>• 심리학 이론 기반 4축 채점 리포트</div>
+        <div>• 개선 포인트 및 대안 제시</div>
+      </div>
+    </div>
+
+    <div id="error-box" style="display:none;" class="error"></div>
+    <div id="loading-box" class="loading">결제수단을 불러오는 중...</div>
+
+    <div id="payment-method"></div>
+    <div id="agreement"></div>
+
+    <button id="pay-btn" class="pay-btn" disabled>결제수단을 불러오는 중...</button>
+  </div>
+
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var origin = window.location.origin;
+
+    // 시뮬레이션 파라미터를 success/fail URL에 전달
+    var simParams = '';
+    ['x','y','s','g','mg','og','r'].forEach(function(k) {
+      var v = params.get(k);
+      if (v) simParams += '&' + k + '=' + encodeURIComponent(v);
+    });
+
+    function showError(msg) {
+      var box = document.getElementById('error-box');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    // 클라이언트 키를 API에서 가져옴
+    fetch('/api/toss-key')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.clientKey) {
+          showError('결제 키 로딩 실패');
+          return;
+        }
+        initWidget(data.clientKey);
+      })
+      .catch(function() {
+        showError('결제 초기화 실패');
+      });
+
+    var widget;
+
+    function initWidget(clientKey) {
+      try {
+        widget = PaymentWidget(clientKey, PaymentWidget.ANONYMOUS);
+        widget.renderPaymentMethods('#payment-method', { value: 4900 });
+        widget.renderAgreement('#agreement');
+      } catch(e) {
+        showError('위젯 초기화 실패: ' + e.message);
+        return;
+      }
+
+      // iframe 로딩 감지
+      var checkCount = 0;
+      var checker = setInterval(function() {
+        checkCount++;
+        var el = document.getElementById('payment-method');
+        var iframe = el ? el.querySelector('iframe') : null;
+
+        if (iframe && iframe.offsetHeight > 100) {
+          clearInterval(checker);
+          document.getElementById('loading-box').style.display = 'none';
+          var btn = document.getElementById('pay-btn');
+          btn.textContent = '4,900원 결제하기';
+          btn.classList.add('active');
+          btn.disabled = false;
+        }
+
+        if (checkCount >= 30) {
+          clearInterval(checker);
+          document.getElementById('loading-box').style.display = 'none';
+          // 30초 넘으면 그래도 활성화
+          var btn2 = document.getElementById('pay-btn');
+          btn2.textContent = '4,900원 결제하기';
+          btn2.classList.add('active');
+          btn2.disabled = false;
+        }
+      }, 1000);
+    }
+
+    document.getElementById('pay-btn').addEventListener('click', function() {
+      if (!widget) return;
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = '결제 진행 중...';
+
+      var orderId = 'LUVOS-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+
+      widget.requestPayment({
+        orderId: orderId,
+        orderName: 'LuvOS 시뮬레이션 1회',
+        successUrl: origin + '/payment/success?' + simParams.slice(1),
+        failUrl: origin + '/payment/fail?' + simParams.slice(1),
+      }).catch(function(err) {
+        if (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED') {
+          btn.disabled = false;
+          btn.textContent = '4,900원 결제하기';
+          return;
+        }
+        showError('결제 오류: ' + (err.message || JSON.stringify(err)));
+        btn.disabled = false;
+        btn.textContent = '4,900원 결제하기';
+      });
+    });
+  </script>
+</body>
+</html>
