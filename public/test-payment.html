@@ -7,56 +7,87 @@
   <script src="https://js.tosspayments.com/v1/payment-widget"></script>
   <style>
     body { font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-    #log { background: #fff; border: 1px solid #ddd; padding: 10px; margin: 10px 0; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 100px; }
+    #log { background: #fff; border: 1px solid #ddd; padding: 10px; margin: 10px 0; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 100px; max-height: 300px; overflow-y: auto; }
     button { width: 100%; padding: 15px; font-size: 16px; background: #3182f6; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
     button:disabled { opacity: 0.5; }
-    #payment-method { min-height: 200px; background: #fff; }
-    #agreement { background: #fff; }
+    #payment-method { min-height: 200px; background: #fff; border: 2px solid #ccc; }
+    #agreement { background: #fff; border: 2px solid #ccc; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h2>토스 결제 위젯 테스트</h2>
   <div id="log">로그...</div>
+
+  <h3>결제수단 영역 ↓</h3>
   <div id="payment-method"></div>
+
+  <h3>약관 영역 ↓</h3>
   <div id="agreement"></div>
+
   <button id="pay-btn" disabled>결제하기 (4,900원)</button>
 
   <script>
     var log = document.getElementById('log');
     function addLog(msg) {
       log.textContent += '\n' + new Date().toLocaleTimeString() + ' ' + msg;
+      log.scrollTop = log.scrollHeight;
     }
 
     var CLIENT_KEY = 'test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm';
     var widget;
 
-    addLog('1. 스크립트 로드 완료');
-    addLog('2. 클라이언트 키: ' + CLIENT_KEY.substring(0, 15) + '...');
+    addLog('1. 클라이언트 키: ' + CLIENT_KEY.substring(0, 15) + '...');
 
     try {
-      addLog('3. PaymentWidget 초기화 중...');
       widget = PaymentWidget(CLIENT_KEY, PaymentWidget.ANONYMOUS);
-      addLog('4. 초기화 성공');
+      addLog('2. 초기화 성공');
 
-      addLog('5. renderPaymentMethods 호출 (동기)...');
-      var pmWidget = widget.renderPaymentMethods('#payment-method', { value: 4900 });
-      addLog('6. renderPaymentMethods 반환값 타입: ' + typeof pmWidget);
+      widget.renderPaymentMethods('#payment-method', { value: 4900 });
+      addLog('3. renderPaymentMethods 호출 완료');
 
-      addLog('7. renderAgreement 호출...');
       widget.renderAgreement('#agreement');
-      addLog('8. renderAgreement 완료');
-
-      // 위젯 iframe 로딩 대기 (3초)
-      addLog('9. 위젯 렌더링 대기 중 (3초)...');
-      setTimeout(function() {
-        addLog('10. 결제 버튼 활성화!');
-        document.getElementById('pay-btn').disabled = false;
-      }, 3000);
+      addLog('4. renderAgreement 호출 완료');
 
     } catch(e) {
       addLog('ERROR: ' + e.message);
-      addLog('STACK: ' + e.stack);
     }
+
+    // iframe 로딩 상태를 주기적으로 체크
+    var checkCount = 0;
+    var checker = setInterval(function() {
+      checkCount++;
+      var pmEl = document.getElementById('payment-method');
+      var iframes = pmEl.querySelectorAll('iframe');
+      var children = pmEl.children.length;
+      var html = pmEl.innerHTML.substring(0, 200);
+
+      addLog('체크 ' + checkCount + ': children=' + children + ' iframes=' + iframes.length + ' html=' + html);
+
+      if (iframes.length > 0) {
+        addLog('iframe 발견! src=' + (iframes[0].src || '없음').substring(0, 100));
+
+        // iframe이 로드되었는지 확인
+        iframes[0].addEventListener('load', function() {
+          addLog('iframe load 이벤트 발생!');
+          document.getElementById('pay-btn').disabled = false;
+        });
+
+        // 이미 로드됐을 수 있으니 5초 후 활성화
+        setTimeout(function() {
+          addLog('결제 버튼 활성화');
+          document.getElementById('pay-btn').disabled = false;
+        }, 5000);
+
+        clearInterval(checker);
+      }
+
+      if (checkCount >= 20) {
+        addLog('20회 체크 완료 - iframe 없음. 위젯 렌더링 실패.');
+        clearInterval(checker);
+        // 그래도 버튼은 활성화해서 에러 확인
+        document.getElementById('pay-btn').disabled = false;
+      }
+    }, 1000);
 
     document.getElementById('pay-btn').addEventListener('click', function() {
       var orderId = 'TEST-' + Date.now();
@@ -67,7 +98,7 @@
         successUrl: window.location.origin + '/payment/success',
         failUrl: window.location.origin + '/payment/fail',
       }).catch(function(err) {
-        addLog('ERROR (pay): code=' + err.code + ' msg=' + err.message);
+        addLog('ERROR (pay): code=' + (err.code || '?') + ' msg=' + (err.message || '?'));
       });
     });
   </script>
