@@ -45,22 +45,33 @@ function PaymentContent() {
       widget.renderAgreement("#agreement");
       widgetRef.current = widget;
 
-      // iframe 로딩 대기 후 버튼 활성화
+      // iframe 콘텐츠가 실제로 로드될 때까지 높이 변화 감지
+      let lastHeight = 0;
+      let stableCount = 0;
       const checker = setInterval(() => {
         const el = document.getElementById("payment-method");
-        const iframes = el?.querySelectorAll("iframe") || [];
-        if (iframes.length > 0) {
-          clearInterval(checker);
-          setTimeout(() => setReady(true), 2000);
+        const iframe = el?.querySelector("iframe") as HTMLIFrameElement | null;
+        if (iframe) {
+          const h = iframe.offsetHeight;
+          if (h > 100 && h === lastHeight) {
+            stableCount++;
+            // 높이가 100px 이상이고 2회 연속 같으면 로딩 완료
+            if (stableCount >= 2) {
+              clearInterval(checker);
+              setReady(true);
+            }
+          } else {
+            stableCount = 0;
+          }
+          lastHeight = h;
         }
-      }, 500);
+      }, 1000);
 
-      // 최대 15초 대기
+      // 최대 30초 대기 후 강제 활성화
       setTimeout(() => {
         clearInterval(checker);
-        if (!widgetRef.current) return;
         setReady(true);
-      }, 15000);
+      }, 30000);
     } catch (e: unknown) {
       const err = e as { message?: string };
       setError(`위젯 초기화 실패: ${err.message || String(e)}`);
@@ -151,7 +162,7 @@ function PaymentContent() {
             className="w-full py-4 text-white rounded-full text-lg font-bold disabled:opacity-50 transition-colors shadow-lg"
             style={{ background: ready ? "#e84393" : "#999" }}
           >
-            {loading ? "결제 진행 중..." : ready ? "4,900원 결제하기" : "결제 위젯 로딩 중..."}
+            {loading ? "결제 진행 중..." : ready ? "4,900원 결제하기" : "결제수단을 불러오는 중..."}
           </button>
         </div>
       </main>
