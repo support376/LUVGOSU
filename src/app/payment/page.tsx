@@ -21,10 +21,11 @@ function PaymentContent() {
       try {
         const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
         if (!clientKey) {
-          setError("결제 키가 설정되지 않았습니다.");
+          setError("결제 키가 설정되지 않았습니다. env: " + JSON.stringify(process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY));
           return;
         }
 
+        setError(`키 로딩 중: ${clientKey.substring(0, 15)}...`);
         const tossPayments = await loadTossPayments(clientKey);
         const widgets = tossPayments.widgets({ customerKey: ANONYMOUS });
 
