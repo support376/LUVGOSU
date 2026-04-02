@@ -1,4 +1,4 @@
-import type { Coordinate, Situation, ChatMessage, GoalId } from "./types";
+import type { Coordinate, Situation, ChatMessage, GoalId, Gender, ConflictRole } from "./types";
 
 // ===== 좌표 → 성격 프로필 텍스트 =====
 function getPersonalityProfile(coord: Coordinate): string {
@@ -99,8 +99,29 @@ export function buildSimulationSystemPrompt(
   coord: Coordinate,
   situation: Situation,
   goal: GoalId = "reconciliation",
+  myGender: Gender = "male",
+  opponentGender: Gender = "female",
+  role: ConflictRole = "upset",
 ): string {
+  const myGenderKr = myGender === "male" ? "남자" : "여자";
+  const opGenderKr = opponentGender === "male" ? "남자" : "여자";
+
+  const setupText = role === "accused" ? situation.setupAccused : situation.setup;
+  const contextText = role === "accused" ? situation.emotionalContextAccused : situation.emotionalContext;
+
+  const roleContext = role === "upset"
+    ? "유저가 문제를 제기하는 쪽이고, 당신(AI)이 잘못한 쪽입니다. 유저의 지적에 대응하세요."
+    : "유저가 잘못한 쪽이고, 당신(AI)이 문제를 제기하는 쪽입니다. 유저에게 따지세요.";
+
   return `당신은 연애 시뮬레이션에서 유저의 연인 역할입니다.
+
+## 성별 관계
+- 유저: ${myGenderKr}
+- 당신(연인): ${opGenderKr}
+- ${opGenderKr}의 말투와 표현을 자연스럽게 사용하세요.
+
+## 갈등 역할
+${roleContext}
 
 ## 당신의 성격 (좌표: 관계거리 ${coord.x}/5, 감정표현 ${coord.y}/5)
 ${getPersonalityProfile(coord)}
@@ -110,8 +131,8 @@ ${getConversationStyle(coord)}
 
 ## 현재 상황
 - 카테고리: ${situation.category}
-- 상황: ${situation.setup}
-- 감정 맥락: ${situation.emotionalContext}
+- 상황: ${setupText}
+- 감정 맥락: ${contextText}
 - 숨은 맥락: ${situation.hiddenTrigger}
 
 ${getGoalContext(goal)}
@@ -122,7 +143,8 @@ ${getGoalContext(goal)}
 3. 좌표에 맞는 성격을 일관되게 유지하세요.
 4. 답변은 1~3문장으로 짧게 하세요 (카톡 대화처럼).
 5. 이모티콘은 사용하지 마세요. 텍스트로만 대화하세요.
-6. 절대로 AI라는 것을 드러내지 마세요.`;
+6. 절대로 AI라는 것을 드러내지 마세요.
+7. ${opGenderKr}의 자연스러운 말투를 사용하세요.`;
 }
 
 // ===== 목표별 채점 프롬프트 =====
@@ -273,16 +295,28 @@ export function buildScoringPrompt(
   coord: Coordinate,
   situation: Situation,
   goal: GoalId = "reconciliation",
+  myGender: Gender = "male",
+  opponentGender: Gender = "female",
+  role: ConflictRole = "upset",
 ): string {
   const conversationText = messages
     .map((m) => `[${m.role === "user" ? "유저" : "상대방"}] (턴 ${m.turn}): ${m.content}`)
     .join("\n");
 
+  const myGenderKr = myGender === "male" ? "남자" : "여자";
+  const opGenderKr = opponentGender === "male" ? "남자" : "여자";
+  const setupText = role === "accused" ? situation.setupAccused : situation.setup;
+  const roleDesc = role === "upset"
+    ? "유저가 문제를 제기하는 쪽 (상대가 잘못함)"
+    : "유저가 잘못한 쪽 (상대가 따지는 쪽)";
+
   return `당신은 관계 커뮤니케이션 전문 평가자입니다.
 
 ## 평가 대상
+유저: ${myGenderKr} / 상대: ${opGenderKr}
+갈등 역할: ${roleDesc}
 상대 유형: 관계거리 ${coord.x}/5, 감정표현 ${coord.y}/5
-상황: ${situation.title} — ${situation.setup}
+상황: ${situation.title} — ${setupText}
 
 ## 대화 내용
 ${conversationText}

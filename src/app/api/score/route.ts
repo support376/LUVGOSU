@@ -1,6 +1,6 @@
 import { buildScoringPrompt } from "@/lib/prompts";
 import { SITUATIONS } from "@/lib/data";
-import type { Coordinate, ChatMessage, ScoreResult, GoalId } from "@/lib/types";
+import type { Coordinate, ChatMessage, ScoreResult, GoalId, Gender, ConflictRole } from "@/lib/types";
 import { getGrade } from "@/lib/data";
 
 export async function POST(request: Request) {
@@ -9,11 +9,17 @@ export async function POST(request: Request) {
     coordinate,
     situationId,
     goal,
+    myGender,
+    opponentGender,
+    role,
     messages,
   }: {
     coordinate: Coordinate;
     situationId: string;
     goal: GoalId;
+    myGender: Gender;
+    opponentGender: Gender;
+    role: ConflictRole;
     messages: ChatMessage[];
   } = body;
 
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "잘못된 상황 ID" }, { status: 400 });
   }
 
-  const scoringPrompt = buildScoringPrompt(messages, coordinate, situation, goal);
+  const scoringPrompt = buildScoringPrompt(messages, coordinate, situation, goal, myGender, opponentGender, role);
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -58,7 +64,6 @@ export async function POST(request: Request) {
   const text =
     data.content?.[0]?.type === "text" ? data.content[0].text : "";
 
-  // JSON 파싱
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     return Response.json(
@@ -69,7 +74,6 @@ export async function POST(request: Request) {
 
   const parsed = JSON.parse(jsonMatch[0]) as ScoreResult;
 
-  // totalScore 재계산
   const total =
     parsed.axis1.score +
     parsed.axis2.score +

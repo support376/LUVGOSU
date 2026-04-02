@@ -1,6 +1,6 @@
 import { buildSimulationSystemPrompt } from "@/lib/prompts";
 import { SITUATIONS } from "@/lib/data";
-import type { Coordinate, ChatMessage, GoalId } from "@/lib/types";
+import type { Coordinate, ChatMessage, GoalId, Gender, ConflictRole } from "@/lib/types";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -8,11 +8,17 @@ export async function POST(request: Request) {
     coordinate,
     situationId,
     goal,
+    myGender,
+    opponentGender,
+    role,
     messages,
   }: {
     coordinate: Coordinate;
     situationId: string;
     goal: GoalId;
+    myGender: Gender;
+    opponentGender: Gender;
+    role: ConflictRole;
     messages: ChatMessage[];
   } = body;
 
@@ -29,9 +35,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "잘못된 상황 ID" }, { status: 400 });
   }
 
-  const systemPrompt = buildSimulationSystemPrompt(coordinate, situation, goal);
+  const systemPrompt = buildSimulationSystemPrompt(coordinate, situation, goal, myGender, opponentGender, role);
 
-  // Claude API 메시지 형식으로 변환
   const apiMessages = messages.map((m) => ({
     role: m.role === "user" ? ("user" as const) : ("assistant" as const),
     content: m.content,

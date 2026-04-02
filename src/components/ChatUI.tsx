@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { Coordinate, ChatMessage, Situation, GoalId } from "@/lib/types";
+import type { Coordinate, ChatMessage, Situation, GoalId, Gender, ConflictRole } from "@/lib/types";
 import { GOALS } from "@/lib/data";
 
 interface Props {
   coordinate: Coordinate;
   situation: Situation;
   goal: GoalId;
+  myGender: Gender;
+  opponentGender: Gender;
+  role: ConflictRole;
   onComplete: (messages: ChatMessage[]) => void;
 }
 
@@ -22,7 +25,15 @@ function getTimeString() {
   return `${period} ${hour}:${m}`;
 }
 
-export default function ChatUI({ coordinate, situation, goal, onComplete }: Props) {
+function getAvatar(gender: Gender) {
+  return gender === "male" ? "👨" : "👩";
+}
+
+function getGenderLabel(gender: Gender) {
+  return gender === "male" ? "남자친구" : "여자친구";
+}
+
+export default function ChatUI({ coordinate, situation, goal, myGender, opponentGender, role, onComplete }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,6 +42,14 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const goalData = GOALS.find((g) => g.id === goal) || GOALS[0];
+  const opponentLabel = getGenderLabel(opponentGender);
+  const opponentAvatar = getAvatar(opponentGender);
+  const roleDesc = role === "upset" ? "내가 문제 제기" : "내가 지적당하는 쪽";
+
+  // 역할에 따라 상황 설명 분기
+  const setupText = role === "accused" ? situation.setupAccused : situation.setup;
+  const contextText = role === "accused" ? situation.emotionalContextAccused : situation.emotionalContext;
+  const firstMessage = role === "accused" ? situation.opponentFirstMessageAccused : situation.opponentFirstMessage;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,7 +63,7 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
     setStarted(true);
     const firstMsg: ChatMessage = {
       role: "opponent",
-      content: situation.opponentFirstMessage,
+      content: firstMessage,
       turn: 1,
     };
     setMessages([firstMsg]);
@@ -80,6 +99,9 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
           coordinate,
           situationId: situation.id,
           goal,
+          myGender,
+          opponentGender,
+          role,
           messages: newMessages,
         }),
       });
@@ -125,18 +147,16 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
           </svg>
         </button>
         <div className="flex items-center gap-2.5 flex-1">
-          {/* 프로필 */}
           <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-base">
-            😠
+            {opponentAvatar}
           </div>
           <div>
-            <div className="font-medium text-sm leading-tight">상대방</div>
+            <div className="font-medium text-sm leading-tight">{opponentLabel}</div>
             <div className="text-[10px] text-white/50">
-              ({coordinate.x},{coordinate.y}) · {goalData.emoji} {goalData.name}
+              ({coordinate.x},{coordinate.y}) · {goalData.emoji} {goalData.name} · {roleDesc}
             </div>
           </div>
         </div>
-        {/* 턴 표시 */}
         <div className="text-xs text-white/60">
           {turnCount}/{MAX_TURNS}턴
         </div>
@@ -153,15 +173,34 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
       {/* 시작 전 브리핑 */}
       {!started && (
         <div className="flex-1 bg-kakao-bg flex flex-col items-center justify-center p-6 space-y-4">
-          {/* 상황 카드 */}
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-sm">
             <div className="text-center mb-4">
               <div className="text-xs text-kakao-time mb-1">{situation.category}</div>
               <div className="text-lg font-bold text-kakao-text">{situation.title}</div>
             </div>
+
+            {/* 역할 표시 */}
+            <div className="flex justify-center gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl">{getAvatar(myGender)}</div>
+                <div className="text-[10px] text-kakao-time mt-1">나</div>
+                <div className="text-[10px] text-kakao-text font-medium">
+                  {role === "upset" ? "😤 따지는 쪽" : "😰 지적당하는 쪽"}
+                </div>
+              </div>
+              <div className="flex items-center text-kakao-time">vs</div>
+              <div className="text-center">
+                <div className="text-2xl">{opponentAvatar}</div>
+                <div className="text-[10px] text-kakao-time mt-1">{opponentLabel}</div>
+                <div className="text-[10px] text-kakao-text font-medium">
+                  {role === "upset" ? "😰 지적당하는 쪽" : "😤 따지는 쪽"}
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3 text-sm text-kakao-text/80">
-              <p>{situation.setup}</p>
-              <p className="text-xs text-kakao-time">{situation.emotionalContext}</p>
+              <p>{setupText}</p>
+              <p className="text-xs text-kakao-time">{contextText}</p>
             </div>
             <div className="mt-4 pt-3 border-t border-gray-100">
               <div className="flex items-center gap-2 text-sm">
@@ -194,7 +233,7 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
             {/* 상황 안내 */}
             <div className="flex justify-center mb-2">
               <span className="text-[11px] text-kakao-time bg-black/10 px-3 py-1 rounded-full">
-                {situation.title} · {goalData.emoji} {goalData.name} 모드
+                {situation.title} · {goalData.emoji} {goalData.name} · {roleDesc}
               </span>
             </div>
 
@@ -212,12 +251,11 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
               if (msg.role === "opponent") {
                 return (
                   <div key={i} className="flex items-start gap-2">
-                    {/* 프로필 */}
                     <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-lg shrink-0">
-                      😠
+                      {opponentAvatar}
                     </div>
                     <div>
-                      <div className="text-[11px] text-kakao-text/60 mb-1 ml-1">상대방</div>
+                      <div className="text-[11px] text-kakao-text/60 mb-1 ml-1">{opponentLabel}</div>
                       <div className="flex items-end gap-1.5">
                         <div className="relative bg-white text-kakao-text rounded-2xl rounded-tl-sm px-3 py-2 text-[13px] leading-relaxed shadow-sm max-w-[240px] bubble-left">
                           {msg.content}
@@ -229,7 +267,6 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
                 );
               }
 
-              // 유저 메시지
               return (
                 <div key={i} className="flex justify-end items-end gap-1.5">
                   <span className="text-[10px] text-kakao-time shrink-0 mb-0.5">{getTimeString()}</span>
@@ -243,10 +280,10 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
             {loading && (
               <div className="flex items-start gap-2">
                 <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-lg shrink-0">
-                  😠
+                  {opponentAvatar}
                 </div>
                 <div>
-                  <div className="text-[11px] text-kakao-text/60 mb-1 ml-1">상대방</div>
+                  <div className="text-[11px] text-kakao-text/60 mb-1 ml-1">{opponentLabel}</div>
                   <div className="bg-white text-kakao-text rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <div className="flex gap-1">
                       <div className="w-1.5 h-1.5 bg-kakao-time/40 rounded-full animate-bounce" style={{ animationDelay: "0s" }} />
@@ -291,7 +328,6 @@ export default function ChatUI({ coordinate, situation, goal, onComplete }: Prop
                 </button>
               </div>
             )}
-            {/* 남은 턴 표시 */}
             {turnCount < MAX_TURNS && (
               <div className="text-center mt-1.5">
                 <span className="text-[10px] text-kakao-time">

@@ -20,10 +20,19 @@ export interface Situation {
   category: string;
   title: string;
   setup: string;
+  setupAccused: string; // 내가 지적당하는 쪽일 때의 상황 설명
   emotionalContext: string;
+  emotionalContextAccused: string;
   hiddenTrigger: string;
-  opponentFirstMessage: string;
+  opponentFirstMessage: string; // 상대가 잘못했을 때 (내가 upset)
+  opponentFirstMessageAccused: string; // 내가 잘못했을 때 (내가 accused)
 }
+
+// ===== 성별 & 역할 =====
+export type Gender = "male" | "female";
+export type ConflictRole = "upset" | "accused";
+// upset = 내가 문제 제기하는 쪽 (상대가 잘못함)
+// accused = 내가 지적당하는 쪽 (내가 잘못함)
 
 // ===== 관계 목표 =====
 export type GoalId = "reconciliation" | "dominance" | "empathy" | "closure";

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import ChatUI from "@/components/ChatUI";
 import ScoreReport from "@/components/ScoreReport";
 import { SITUATIONS, GOALS } from "@/lib/data";
-import type { Coordinate, ChatMessage, ScoreResult, GoalId } from "@/lib/types";
+import type { Coordinate, ChatMessage, ScoreResult, GoalId, Gender, ConflictRole } from "@/lib/types";
 
 function SimulateContent() {
   const searchParams = useSearchParams();
@@ -13,6 +13,9 @@ function SimulateContent() {
   const y = parseInt(searchParams.get("y") || "3");
   const situationId = searchParams.get("s") || "S1";
   const goalId = (searchParams.get("g") || "reconciliation") as GoalId;
+  const myGender = (searchParams.get("mg") || "male") as Gender;
+  const opponentGender = (searchParams.get("og") || "female") as Gender;
+  const role = (searchParams.get("r") || "upset") as ConflictRole;
 
   const coordinate: Coordinate = { x, y };
   const situation = SITUATIONS.find((s) => s.id === situationId) || SITUATIONS[0];
@@ -34,6 +37,9 @@ function SimulateContent() {
           coordinate,
           situationId,
           goal: goalId,
+          myGender,
+          opponentGender,
+          role,
           messages: completedMessages,
         }),
       });
@@ -100,6 +106,9 @@ function SimulateContent() {
         coordinate={coordinate}
         situation={situation}
         goal={goalId}
+        myGender={myGender}
+        opponentGender={opponentGender}
+        role={role}
         onComplete={handleComplete}
       />
     </main>
