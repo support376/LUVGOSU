@@ -17,16 +17,17 @@ function PaymentContent() {
       try {
         const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
         if (!clientKey) {
-          setError("결제 키가 설정되지 않았습니다.");
+          setError("결제 키가 설정되지 않았습니다. (NEXT_PUBLIC_TOSS_CLIENT_KEY)");
           return;
         }
+        setError(`키 확인: ${clientKey.substring(0, 10)}... 로딩 중`);
         const tossPayments = await loadTossPayments(clientKey);
         tossRef.current = tossPayments;
         setSdkReady(true);
+        setError(null);
       } catch (e: unknown) {
-        const err = e as { message?: string };
-        setError(`결제 모듈 로딩 실패: ${err.message || String(e)}`);
-        console.error(e);
+        setError(`SDK 로딩 실패: ${JSON.stringify(e, Object.getOwnPropertyNames(e as object))}`);
+        console.error("SDK init error:", e);
       }
     }
     init();
@@ -37,7 +38,7 @@ function PaymentContent() {
     setLoading(true);
     setError(null);
 
-    const orderId = `LUVOS_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const orderId = `LUVOS${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
 
     try {
       const payment = tossRef.current.payment({ customerKey: ANONYMOUS });
@@ -51,12 +52,27 @@ function PaymentContent() {
         failUrl: `${window.location.origin}/payment/fail?${params}`,
       });
     } catch (e: unknown) {
-      const err = e as { code?: string; message?: string };
-      if (err.code === "USER_CANCEL") {
+      console.error("Payment error:", e);
+      const err = e as Record<string, unknown>;
+
+      // 유저 취소
+      if (err.code === "USER_CANCEL" || err.code === "PAY_PROCESS_CANCELED") {
         setLoading(false);
         return;
       }
-      setError(err.message || "결제 요청 중 오류가 발생했습니다.");
+
+      // 상세 에러 표시
+      const details = [];
+      if (err.code) details.push(`코드: ${err.code}`);
+      if (err.message) details.push(`메시지: ${err.message}`);
+      if (details.length === 0) {
+        try {
+          details.push(JSON.stringify(e, Object.getOwnPropertyNames(e as object)));
+        } catch {
+          details.push(String(e));
+        }
+      }
+      setError(details.join(" | "));
       setLoading(false);
     }
   };
@@ -92,12 +108,12 @@ function PaymentContent() {
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 text-sm text-red-400 text-center">
+          <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 text-sm text-red-400 text-center break-all">
             {error}
           </div>
         )}
 
-        {/* 결제 수단 선택 */}
+        {/* 결제 버튼 */}
         <div className="space-y-3">
           <button
             onClick={handlePayment}
