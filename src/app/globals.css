@@ -8,6 +8,16 @@
   --card: #1a1a2e;
   --card-border: #2a2a4a;
   --muted: #888;
+
+  /* 카카오톡 채팅 색상 */
+  --kakao-bg: #B2C7D9;
+  --kakao-yellow: #FEE500;
+  --kakao-white: #FFFFFF;
+  --kakao-text: #1A1A1A;
+  --kakao-time: #7B8894;
+  --kakao-header: #3C4858;
+  --kakao-input-bg: #FFFFFF;
+  --kakao-input-border: #D5D5D5;
 }
 
 @theme inline {
@@ -18,6 +28,14 @@
   --color-card: var(--card);
   --color-card-border: var(--card-border);
   --color-muted: var(--muted);
+  --color-kakao-bg: var(--kakao-bg);
+  --color-kakao-yellow: var(--kakao-yellow);
+  --color-kakao-white: var(--kakao-white);
+  --color-kakao-text: var(--kakao-text);
+  --color-kakao-time: var(--kakao-time);
+  --color-kakao-header: var(--kakao-header);
+  --color-kakao-input-bg: var(--kakao-input-bg);
+  --color-kakao-input-border: var(--kakao-input-border);
   --font-sans: var(--font-geist-sans);
 }
 
@@ -26,14 +44,37 @@ body {
   color: var(--foreground);
 }
 
+/* 카카오톡 말풍선 꼬리 */
+.bubble-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid white;
+  border-left: 6px solid transparent;
+}
+
+.bubble-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -6px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid var(--kakao-yellow);
+  border-right: 6px solid transparent;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--card);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--accent);
+  background: rgba(0,0,0,0.15);
   border-radius: 2px;
 }
