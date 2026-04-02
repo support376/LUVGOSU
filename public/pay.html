@@ -18,7 +18,7 @@
     .pay-btn.active { background: #e84393; }
     .back { display: inline-block; color: #888; text-decoration: none; font-size: 14px; margin-bottom: 16px; }
     .error { background: #fff0f0; border: 1px solid #ffccc7; border-radius: 12px; padding: 12px; font-size: 13px; color: #e84393; margin-bottom: 16px; word-break: break-all; }
-    .log { background: #fff; border: 1px solid #ddd; padding: 8px; margin-bottom: 12px; font-size: 11px; white-space: pre-wrap; word-break: break-all; max-height: 150px; overflow-y: auto; display: none; }
+
   </style>
 </head>
 <body>
@@ -33,7 +33,6 @@
     </div>
 
     <div id="error-box" style="display:none;" class="error"></div>
-    <div id="log" class="log"></div>
 
     <div id="payment-method"></div>
     <div id="agreement"></div>
@@ -51,102 +50,57 @@
     });
     if (simParams) simParams = simParams.slice(1);
 
-    var logEl = document.getElementById('log');
-    // URL에 debug=1이면 로그 표시
-    if (params.get('debug')) logEl.style.display = 'block';
-    function log(msg) { logEl.textContent += msg + '\n'; logEl.scrollTop = logEl.scrollHeight; }
-
     function showError(msg) {
       document.getElementById('error-box').textContent = msg;
       document.getElementById('error-box').style.display = 'block';
     }
 
     var widget;
-    var pmWidget; // renderPaymentMethods 반환 객체
 
-    try {
-      log('1. PaymentWidget 초기화');
-      widget = PaymentWidget('test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm', PaymentWidget.ANONYMOUS);
+    // 클라이언트 키를 API에서 가져와서 초기화
+    fetch('/api/toss-key')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.clientKey) { showError('결제 키 로딩 실패'); return; }
+        initWidget(data.clientKey);
+      })
+      .catch(function() { showError('결제 초기화 실패'); });
 
-      log('2. renderPaymentMethods');
-      pmWidget = widget.renderPaymentMethods('#payment-method', { value: 4900 });
-      log('3. pmWidget 타입: ' + typeof pmWidget);
-      log('4. pmWidget 키: ' + Object.keys(pmWidget).join(', '));
-
-      // 사용 가능한 메서드 확인
-      for (var key in pmWidget) {
-        log('  - ' + key + ': ' + typeof pmWidget[key]);
+    function initWidget(clientKey) {
+      try {
+        widget = PaymentWidget(clientKey, PaymentWidget.ANONYMOUS);
+        widget.renderPaymentMethods('#payment-method', { value: 4900 });
+        widget.renderAgreement('#agreement');
+      } catch(e) {
+        showError('위젯 초기화 실패: ' + e.message);
+        return;
       }
 
-      log('5. renderAgreement');
-      var agWidget = widget.renderAgreement('#agreement');
-      log('6. agWidget 키: ' + Object.keys(agWidget).join(', '));
-
-      // pmWidget에 on 메서드가 있으면 ready 이벤트 구독 시도
-      if (typeof pmWidget.on === 'function') {
-        log('7. pmWidget.on 발견 — 이벤트 구독 시도');
-        try {
-          pmWidget.on('ready', function() {
-            log('EVENT: ready!');
-            enableButton();
-          });
-        } catch(e) {
-          log('ready 이벤트 실패: ' + e.message);
-        }
-
-        // 다른 이벤트도 시도
-        try {
-          pmWidget.on('renderComplete', function() { log('EVENT: renderComplete!'); enableButton(); });
-        } catch(e) {}
-        try {
-          pmWidget.on('load', function() { log('EVENT: load!'); enableButton(); });
-        } catch(e) {}
-      }
-
-      // window message 이벤트 감시
-      window.addEventListener('message', function(e) {
-        if (e.origin && e.origin.indexOf('tosspayments') !== -1) {
-          log('MSG from toss: ' + (typeof e.data === 'string' ? e.data.substring(0, 100) : JSON.stringify(e.data).substring(0, 100)));
-        }
-      });
-
-      // fallback: iframe 높이 + 시간 기반
+      // iframe 콘텐츠 로딩 완료 감지
       var startTime = Date.now();
       var checker = setInterval(function() {
         var el = document.getElementById('payment-method');
         var iframe = el ? el.querySelector('iframe') : null;
         var elapsed = Math.round((Date.now() - startTime) / 1000);
 
-        if (iframe) {
-          var h = iframe.offsetHeight;
-          log('체크 ' + elapsed + 's: h=' + h);
-
-          if (h > 200) {
-            clearInterval(checker);
-            log('높이 충분 — 3초 추가 대기');
-            setTimeout(enableButton, 3000);
-          }
+        if (iframe && iframe.offsetHeight > 200) {
+          clearInterval(checker);
+          setTimeout(enableButton, 3000);
         }
 
-        if (elapsed >= 20) {
+        if (elapsed >= 25) {
           clearInterval(checker);
-          log('20초 타임아웃 — 강제 활성화');
           enableButton();
         }
       }, 1000);
-
-    } catch(e) {
-      showError('초기화 실패: ' + e.message);
-      log('ERROR: ' + e.message + '\n' + e.stack);
     }
 
     function enableButton() {
       var btn = document.getElementById('pay-btn');
-      if (!btn.disabled) return; // 이미 활성화됨
+      if (!btn.disabled) return;
       btn.textContent = '4,900원 결제하기';
       btn.classList.add('active');
       btn.disabled = false;
-      log('버튼 활성화됨');
     }
 
     document.getElementById('pay-btn').addEventListener('click', function() {
@@ -154,8 +108,6 @@
       var btn = this;
       btn.disabled = true;
       btn.textContent = '결제 진행 중...';
-      log('결제 요청 시작');
-
       var orderId = 'LUVOS-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
 
       widget.requestPayment({
@@ -164,7 +116,6 @@
         successUrl: origin + '/payment/success?' + simParams,
         failUrl: origin + '/payment/fail?' + simParams,
       }).catch(function(err) {
-        log('결제 에러: code=' + (err.code||'?') + ' msg=' + (err.message||'?'));
         if (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED') {
           btn.disabled = false;
           btn.textContent = '4,900원 결제하기';
