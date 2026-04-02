@@ -111,8 +111,8 @@ function PaymentContent() {
         onLoad={() => setScriptLoaded(true)}
         onError={() => setError("토스 결제 스크립트 로딩 실패")}
       />
-      <main className="flex-1 flex flex-col overflow-y-auto" style={{ background: "#f5f5f5" }}>
-        <div className="max-w-md mx-auto w-full px-4 py-6 space-y-6">
+      <main style={{ maxWidth: "480px", margin: "0 auto", padding: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* 헤더 */}
           <div className="flex items-center">
             <button
