@@ -14,6 +14,15 @@ const categoryIcons: Record<string, string> = {
   "외부 관계": "👥",
   "감정 표현": "💔",
   "미래/진지함": "💍",
+  "돈/경제": "💰",
+  "잠자리": "🛏️",
+  "가족": "👨‍👩‍👦",
+  "전 애인": "👻",
+  "생활습관": "🏠",
+  "신뢰": "🔓",
+  "결혼/동거": "💒",
+  "외모/자존감": "🪞",
+  "커리어": "💼",
 };
 
 export default function SituationPicker({ value, onChange }: Props) {
