@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import CreditBadge from "@/components/CreditBadge";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${geistSans.variable} antialiased`}>
       <body className="h-dvh flex flex-col bg-background text-foreground font-sans overflow-hidden">
+        <CreditBadge />
         {children}
       </body>
     </html>
