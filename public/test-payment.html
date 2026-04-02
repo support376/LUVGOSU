@@ -27,43 +27,47 @@
       log.textContent += '\n' + new Date().toLocaleTimeString() + ' ' + msg;
     }
 
-    // 키 (env에서 가져올 수 없으니 직접 입력)
     var CLIENT_KEY = 'test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm';
+    var widget;
 
     addLog('1. 스크립트 로드 완료');
-    addLog('2. PaymentWidget 존재: ' + (typeof PaymentWidget !== 'undefined'));
-    addLog('3. 클라이언트 키: ' + CLIENT_KEY.substring(0, 15) + '...');
+    addLog('2. 클라이언트 키: ' + CLIENT_KEY.substring(0, 15) + '...');
 
     try {
-      addLog('4. PaymentWidget 초기화 중...');
-      var widget = PaymentWidget(CLIENT_KEY, PaymentWidget.ANONYMOUS);
-      addLog('5. 초기화 성공. renderPaymentMethods 호출...');
+      addLog('3. PaymentWidget 초기화 중...');
+      widget = PaymentWidget(CLIENT_KEY, PaymentWidget.ANONYMOUS);
+      addLog('4. 초기화 성공');
 
-      widget.renderPaymentMethods('#payment-method', { value: 4900 })
-        .then(function() {
-          addLog('6. renderPaymentMethods 완료!');
-          return widget.renderAgreement('#agreement');
-        })
-        .then(function() {
-          addLog('7. renderAgreement 완료! 결제 준비됨.');
-          document.getElementById('pay-btn').disabled = false;
-        })
-        .catch(function(err) {
-          addLog('ERROR (render): ' + (err.message || JSON.stringify(err)));
-        });
+      addLog('5. renderPaymentMethods 호출 (동기)...');
+      var pmWidget = widget.renderPaymentMethods('#payment-method', { value: 4900 });
+      addLog('6. renderPaymentMethods 반환값 타입: ' + typeof pmWidget);
+
+      addLog('7. renderAgreement 호출...');
+      widget.renderAgreement('#agreement');
+      addLog('8. renderAgreement 완료');
+
+      // 위젯 iframe 로딩 대기 (3초)
+      addLog('9. 위젯 렌더링 대기 중 (3초)...');
+      setTimeout(function() {
+        addLog('10. 결제 버튼 활성화!');
+        document.getElementById('pay-btn').disabled = false;
+      }, 3000);
+
     } catch(e) {
-      addLog('ERROR (init): ' + (e.message || JSON.stringify(e)));
+      addLog('ERROR: ' + e.message);
+      addLog('STACK: ' + e.stack);
     }
 
     document.getElementById('pay-btn').addEventListener('click', function() {
       var orderId = 'TEST-' + Date.now();
+      addLog('결제 요청: ' + orderId);
       widget.requestPayment({
         orderId: orderId,
         orderName: 'LuvOS 테스트',
         successUrl: window.location.origin + '/payment/success',
         failUrl: window.location.origin + '/payment/fail',
       }).catch(function(err) {
-        addLog('ERROR (pay): ' + (err.message || JSON.stringify(err)));
+        addLog('ERROR (pay): code=' + err.code + ' msg=' + err.message);
       });
     });
   </script>
