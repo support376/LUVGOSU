@@ -178,27 +178,26 @@ export default function Home() {
   // 상황 선택
   const selectedGoal = goal ? GOALS.find((g) => g.id === goal) : null;
   return (
-    <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6 overflow-y-auto">
-      <div className="flex items-center mb-6">
-        <button onClick={() => setStep("goal")} className="text-muted hover:text-foreground">
-          &larr; 뒤로
-        </button>
-        <h2 className="flex-1 text-center font-bold">상황 선택</h2>
-        <div className="w-10" />
-      </div>
+    <main className="flex-1 overflow-y-auto">
+      <div className="max-w-md mx-auto w-full px-4 py-6">
+        <div className="flex items-center mb-6">
+          <button onClick={() => setStep("goal")} className="text-muted hover:text-foreground">
+            &larr; 뒤로
+          </button>
+          <h2 className="flex-1 text-center font-bold">상황 선택</h2>
+          <div className="w-10" />
+        </div>
 
-      <div className="mb-3 text-sm text-center text-muted">
-        상대: ({coordinate.x},{coordinate.y}) · {roleLabel}
-        {selectedGoal && (
-          <span> · {selectedGoal.emoji} {selectedGoal.name}</span>
-        )}
-      </div>
+        <div className="mb-3 text-sm text-center text-muted">
+          상대: ({coordinate.x},{coordinate.y}) · {roleLabel}
+          {selectedGoal && (
+            <span> · {selectedGoal.emoji} {selectedGoal.name}</span>
+          )}
+        </div>
 
-      <div className="flex-1 overflow-y-auto">
         <SituationPicker value={situationId} onChange={setSituationId} role={role!} />
-      </div>
 
-      <button
+        <button
         onClick={async () => {
           if (!situationId || !goal || !myGender || !opponentGender || !role) return;
           const simParams = `x=${coordinate.x}&y=${coordinate.y}&s=${situationId}&g=${goal}&mg=${myGender}&og=${opponentGender}&r=${role}`;
@@ -226,7 +225,8 @@ export default function Home() {
         className="mt-4 w-full py-3 bg-accent text-white rounded-full font-medium disabled:opacity-50 hover:bg-accent-light transition-colors"
       >
         시뮬레이션 시작
-      </button>
+        </button>
+      </div>
     </main>
   );
 }
