@@ -7,15 +7,12 @@ import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
 function PaymentContent() {
   const searchParams = useSearchParams();
   const params = searchParams.toString();
-  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const widgetsRef = useRef<Awaited<ReturnType<Awaited<ReturnType<typeof loadTossPayments>>["widgets"]>> | null>(null);
-  const initialized = useRef(false);
+  const [sdkReady, setSdkReady] = useState(false);
+  const tossRef = useRef<Awaited<ReturnType<typeof loadTossPayments>> | null>(null);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
     async function init() {
       try {
         const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
@@ -23,32 +20,31 @@ function PaymentContent() {
           setError("결제 키가 설정되지 않았습니다.");
           return;
         }
-
         const tossPayments = await loadTossPayments(clientKey);
-        const widgets = tossPayments.widgets({ customerKey: ANONYMOUS });
-
-        await widgets.setAmount({ currency: "KRW", value: 4900 });
-        await widgets.renderPaymentMethods({ selector: "#payment-method" });
-        await widgets.renderAgreement({ selector: "#agreement" });
-
-        widgetsRef.current = widgets;
-        setReady(true);
-      } catch (e) {
-        setError("결제 모듈 로딩에 실패했습니다.");
+        tossRef.current = tossPayments;
+        setSdkReady(true);
+      } catch (e: unknown) {
+        const err = e as { message?: string };
+        setError(`결제 모듈 로딩 실패: ${err.message || String(e)}`);
         console.error(e);
       }
     }
-
     init();
   }, []);
 
   const handlePayment = async () => {
-    if (!widgetsRef.current) return;
+    if (!tossRef.current) return;
+    setLoading(true);
+    setError(null);
 
     const orderId = `LUVOS_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     try {
-      await widgetsRef.current.requestPayment({
+      const payment = tossRef.current.payment({ customerKey: ANONYMOUS });
+
+      await payment.requestPayment({
+        method: "CARD",
+        amount: { currency: "KRW", value: 4900 },
         orderId,
         orderName: "LuvOS 시뮬레이션 1회",
         successUrl: `${window.location.origin}/payment/success?${params}`,
@@ -56,8 +52,12 @@ function PaymentContent() {
       });
     } catch (e: unknown) {
       const err = e as { code?: string; message?: string };
-      if (err.code === "USER_CANCEL") return;
+      if (err.code === "USER_CANCEL") {
+        setLoading(false);
+        return;
+      }
       setError(err.message || "결제 요청 중 오류가 발생했습니다.");
+      setLoading(false);
     }
   };
 
@@ -97,18 +97,16 @@ function PaymentContent() {
           </div>
         )}
 
-        {/* 토스 결제 위젯 */}
-        <div id="payment-method" className="rounded-xl overflow-hidden" />
-        <div id="agreement" className="rounded-xl overflow-hidden" />
-
-        {/* 결제 버튼 */}
-        <button
-          onClick={handlePayment}
-          disabled={!ready}
-          className="w-full py-4 bg-accent text-white rounded-full text-lg font-bold disabled:opacity-50 hover:bg-accent-light transition-colors shadow-lg shadow-accent/20"
-        >
-          {ready ? "4,900원 결제하기" : "결제 모듈 로딩 중..."}
-        </button>
+        {/* 결제 수단 선택 */}
+        <div className="space-y-3">
+          <button
+            onClick={handlePayment}
+            disabled={!sdkReady || loading}
+            className="w-full py-4 bg-accent text-white rounded-full text-lg font-bold disabled:opacity-50 hover:bg-accent-light transition-colors shadow-lg shadow-accent/20"
+          >
+            {loading ? "결제 진행 중..." : sdkReady ? "4,900원 카드 결제" : "결제 모듈 로딩 중..."}
+          </button>
+        </div>
       </div>
     </main>
   );
