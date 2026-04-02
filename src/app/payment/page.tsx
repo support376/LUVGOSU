@@ -48,6 +48,7 @@ function PaymentContent() {
     const orderId = `LUVOS-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     try {
+      setError(`디버그: key=${clientKey.substring(0, 12)}... orderId=${orderId} origin=${window.location.origin}`);
       const tossPayments = window.TossPayments(clientKey);
       await tossPayments.requestPayment("카드", {
         amount: 4900,
@@ -57,12 +58,21 @@ function PaymentContent() {
         failUrl: `${window.location.origin}/payment/fail?${params}`,
       });
     } catch (e: unknown) {
-      const err = e as { code?: string; message?: string };
+      console.error("TOSS ERROR FULL:", e);
+      const err = e as Record<string, unknown>;
       if (err.code === "USER_CANCEL" || err.code === "PAY_PROCESS_CANCELED") {
         setLoading(false);
+        setError(null);
         return;
       }
-      setError(err.message || `결제 오류: ${JSON.stringify(e)}`);
+      // 전체 에러 객체를 다 보여줌
+      let msg = "";
+      try {
+        msg = JSON.stringify(e, Object.getOwnPropertyNames(e as object), 2);
+      } catch {
+        msg = String(e);
+      }
+      setError(`에러 전체: ${msg}`);
       setLoading(false);
     }
   };
