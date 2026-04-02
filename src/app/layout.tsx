@@ -19,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+    <html lang="ko" className={`${geistSans.variable} antialiased`}>
+      <body className="h-dvh flex flex-col bg-background text-foreground font-sans overflow-hidden">
         {children}
       </body>
     </html>

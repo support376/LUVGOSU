@@ -25,7 +25,7 @@ export default function Home() {
   // 랜딩 페이지
   if (step === "landing") {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center overflow-y-auto">
         <div className="max-w-md space-y-8">
           <div className="space-y-3">
             <h1 className="text-5xl font-black tracking-tight">
@@ -83,7 +83,7 @@ export default function Home() {
   if (step === "profile") {
     const profileComplete = myGender && opponentGender && role;
     return (
-      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6">
+      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6 overflow-y-auto">
         <div className="flex items-center mb-6">
           <button onClick={() => setStep("landing")} className="text-muted hover:text-foreground">
             &larr; 뒤로
@@ -117,7 +117,7 @@ export default function Home() {
   // 좌표 설정
   if (step === "coordinate") {
     return (
-      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6">
+      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6 overflow-y-auto">
         <div className="flex items-center mb-6">
           <button onClick={() => setStep("profile")} className="text-muted hover:text-foreground">
             &larr; 뒤로
@@ -147,7 +147,7 @@ export default function Home() {
   // 목표 선택
   if (step === "goal") {
     return (
-      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6">
+      <main className="flex-1 flex flex-col max-w-md mx-auto w-full px-4 py-6 overflow-y-auto">
         <div className="flex items-center mb-6">
           <button onClick={() => setStep("coordinate")} className="text-muted hover:text-foreground">
             &larr; 뒤로
