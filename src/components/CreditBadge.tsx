@@ -6,9 +6,9 @@ export default function CreditBadge() {
   const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/check-free")
+    fetch("/api/credits")
       .then((r) => r.json())
-      .then(({ isFree }) => setCredits(isFree ? 1 : 0))
+      .then(({ credits }) => setCredits(credits))
       .catch(() => setCredits(0));
   }, []);
 

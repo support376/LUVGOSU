@@ -3,37 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LuvOS 결제</title>
+  <title>LuvOS 이용권 구매</title>
   <script src="https://js.tosspayments.com/v1/payment-widget"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a}
     .wrap{max-width:480px;margin:0 auto;padding:20px}
-    .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center}
-    .price{font-size:32px;font-weight:900;color:#e84393;margin-top:8px}
-    .sub{font-size:13px;color:#888;margin-top:4px}
+    .back{display:inline-block;color:#888;text-decoration:none;font-size:14px;margin-bottom:16px}
+    h2{text-align:center;font-size:20px;margin-bottom:20px}
+    .plans{display:flex;gap:12px;margin-bottom:20px}
+    .plan{flex:1;background:#fff;border:2px solid #e0e0e0;border-radius:16px;padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s}
+    .plan.selected{border-color:#e84393;background:#fdf2f8}
+    .plan-badge{font-size:11px;color:#fff;background:#e84393;border-radius:20px;padding:2px 8px;display:inline-block;margin-bottom:8px}
+    .plan-count{font-size:28px;font-weight:900;color:#1a1a1a}
+    .plan-unit{font-size:13px;color:#888}
+    .plan-price{font-size:20px;font-weight:800;color:#e84393;margin-top:8px}
+    .plan-per{font-size:11px;color:#888;margin-top:2px}
     #payment-method{margin-bottom:12px}
     #agreement{margin-bottom:12px}
     .pay-btn{width:100%;padding:16px;font-size:17px;font-weight:700;color:#fff;background:#ccc;border:none;border-radius:50px;cursor:pointer}
     .pay-btn.active{background:#e84393}
-    .back{display:inline-block;color:#888;text-decoration:none;font-size:14px;margin-bottom:16px}
     .error{background:#fff0f0;border:1px solid #ffccc7;border-radius:12px;padding:12px;font-size:13px;color:#e84393;margin-bottom:16px;word-break:break-all;display:none}
   </style>
 </head>
 <body>
   <div class="wrap">
     <a class="back" href="javascript:history.back();">&larr; 뒤로</a>
-    <div class="card">
-      <div style="font-size:28px">💝</div>
-      <div style="font-size:18px;font-weight:700">LuvOS 시뮬레이션 1회</div>
-      <div class="price">4,900원</div>
-      <div class="sub">카드 · 카카오페이 · 네이버페이 등</div>
+    <h2>이용권 구매</h2>
+
+    <!-- 플랜 선택 -->
+    <div class="plans">
+      <div class="plan" id="plan-1" onclick="selectPlan(1)">
+        <div class="plan-count">1<span class="plan-unit">회</span></div>
+        <div class="plan-price">4,900원</div>
+        <div class="plan-per">4,900원/회</div>
+      </div>
+      <div class="plan selected" id="plan-5" onclick="selectPlan(5)">
+        <div class="plan-badge">27% 할인</div>
+        <div class="plan-count">5<span class="plan-unit">회</span></div>
+        <div class="plan-price">17,900원</div>
+        <div class="plan-per">3,580원/회</div>
+      </div>
     </div>
+
     <div id="error-box" class="error"></div>
     <div id="payment-method"></div>
     <div id="agreement"></div>
     <button id="pay-btn" class="pay-btn" disabled>결제수단을 불러오는 중...</button>
   </div>
+
   <script>
     var params = new URLSearchParams(window.location.search);
     var origin = window.location.origin;
@@ -45,11 +63,40 @@
     if (simParams) simParams = simParams.slice(1);
 
     var CLIENT_KEY = 'live_gck_6BYq7GWPVvypnKew9A7G3NE5vbo1';
+    var selectedAmount = 17900;
+    var selectedCount = 5;
     var widget;
+    var widgetReady = false;
+
+    function selectPlan(count) {
+      if (count === 1) {
+        selectedAmount = 4900;
+        selectedCount = 1;
+        document.getElementById('plan-1').classList.add('selected');
+        document.getElementById('plan-5').classList.remove('selected');
+      } else {
+        selectedAmount = 17900;
+        selectedCount = 5;
+        document.getElementById('plan-5').classList.add('selected');
+        document.getElementById('plan-1').classList.remove('selected');
+      }
+      // 위젯 금액 업데이트
+      if (widget && widget.updateAmount) {
+        widget.updateAmount(selectedAmount);
+      }
+      updateButton();
+    }
+
+    function updateButton() {
+      if (!widgetReady) return;
+      var btn = document.getElementById('pay-btn');
+      var priceText = selectedAmount.toLocaleString() + '원';
+      btn.textContent = priceText + ' 결제하기 (' + selectedCount + '회)';
+    }
 
     try {
       widget = PaymentWidget(CLIENT_KEY, PaymentWidget.ANONYMOUS);
-      widget.renderPaymentMethods('#payment-method', { value: 4900 });
+      widget.renderPaymentMethods('#payment-method', { value: selectedAmount });
       widget.renderAgreement('#agreement');
     } catch(e) {
       document.getElementById('error-box').textContent = '초기화 실패: ' + e.message;
@@ -63,18 +110,20 @@
       if (iframe && iframe.offsetHeight > 200) {
         clearInterval(checker);
         setTimeout(function() {
+          widgetReady = true;
           var btn = document.getElementById('pay-btn');
-          btn.textContent = '4,900원 결제하기';
           btn.classList.add('active');
           btn.disabled = false;
+          updateButton();
         }, 3000);
       }
       if (elapsed >= 25) {
         clearInterval(checker);
+        widgetReady = true;
         var btn2 = document.getElementById('pay-btn');
-        btn2.textContent = '4,900원 결제하기';
         btn2.classList.add('active');
         btn2.disabled = false;
+        updateButton();
       }
     }, 1000);
 
@@ -85,19 +134,19 @@
       btn.textContent = '결제 진행 중...';
       widget.requestPayment({
         orderId: 'LUVOS-' + Date.now() + '-' + Math.random().toString(36).slice(2,8),
-        orderName: 'LuvOS 시뮬레이션 1회',
-        successUrl: origin + '/payment/success?' + simParams,
+        orderName: 'LuvOS ' + selectedCount + '회 이용권',
+        successUrl: origin + '/payment/success?' + simParams + '&plan=' + selectedCount,
         failUrl: origin + '/payment/fail?' + simParams,
       }).catch(function(err) {
         if (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED') {
           btn.disabled = false;
-          btn.textContent = '4,900원 결제하기';
+          updateButton();
           return;
         }
         document.getElementById('error-box').textContent = err.message || String(err);
         document.getElementById('error-box').style.display = 'block';
         btn.disabled = false;
-        btn.textContent = '4,900원 결제하기';
+        updateButton();
       });
     });
   </script>

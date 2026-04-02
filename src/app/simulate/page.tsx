@@ -29,8 +29,7 @@ function SimulateContent() {
     setMessages(completedMessages);
     setPhase("scoring");
 
-    // 결제 세션 쿠키 소비
-    fetch("/api/check-paid", { method: "POST" }).catch(() => {});
+    // 크레딧은 시작 시 이미 차감됨
 
     try {
       const res = await fetch("/api/score", {

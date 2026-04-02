@@ -205,19 +205,17 @@ export default function Home() {
           const simParams = `x=${coordinate.x}&y=${coordinate.y}&s=${situationId}&g=${goal}&mg=${myGender}&og=${opponentGender}&r=${role}`;
 
           try {
-            // 무료 1회 원자적 체크+소비
-            const res = await fetch("/api/check-free", { method: "POST" });
-            const { claimed } = await res.json();
+            // 크레딧 확인
+            const res = await fetch("/api/credits");
+            const { credits } = await res.json();
 
-            if (claimed) {
-              window.location.href = `/simulate?${simParams}`;
-              return;
-            }
-
-            // 이미 결제한 세션 확인
-            const paidRes = await fetch("/api/check-paid");
-            const { isPaid } = await paidRes.json();
-            if (isPaid) {
+            if (credits > 0) {
+              // 크레딧 1 차감
+              await fetch("/api/credits", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "use" }),
+              });
               window.location.href = `/simulate?${simParams}`;
             } else {
               window.location.href = `/pay.html?${simParams}`;
